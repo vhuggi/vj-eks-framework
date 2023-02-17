@@ -1,0 +1,59 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  CodePipeline:
+    Type: "AWS::CodePipeline::Pipeline"
+    Properties:
+      ArtifactStore:
+        Type: S3
+        Location: my-bucket
+      Name: prod-pipeline
+      RoleArn: arn:aws:iam::123456789012:role/service-role/AWSCodePipelineServiceRole-us-west-2
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: 1
+                Provider: CodeCommit
+              OutputArtifacts:
+                - Name: source
+              Configuration:
+                RepositoryName: my-repo
+                BranchName: prod
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              InputArtifacts:
+                - Name: source
+              OutputArtifacts:
+                - Name: build
+              Configuration:
+                ProjectName: my-project
+              RunOrder: 2
+        - Name: Deploy
+          Actions:
+            - Name: Deploy
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              InputArtifacts:
+                - Name: build
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: arn:aws:iam::123456789012:role/service-role/AWSCodePipelineServiceRole-us-west-2
+                StackName: prod-stack
+                TemplatePath: build::infra.yaml
+                ParameterOverrides: '{"Stage": "prod"}'
+              RunOrder: 3

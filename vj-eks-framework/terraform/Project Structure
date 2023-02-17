@@ -1,0 +1,43 @@
+terraform/
+  main.tf
+  variables.tf
+  terraform.tfvars
+  outputs.tf
+  versions.tf
+  dev/
+    main.tf
+    variables.tf
+    terraform.tfvars
+    outputs.tf
+  acc/
+    main.tf
+    variables.tf
+    terraform.tfvars
+    outputs.tf
+  prod/
+    main.tf
+    variables.tf
+    terraform.tfvars
+    outputs.tf
+
+modules/
+  eks/
+    eks.tf
+    alb.tf
+    rds.tf
+    security-groups.tf
+    aws-auth-cm.tpl
+    providers.tf
+    templates/
+      app-deployment.tpl
+      app-ingress.tpl
+      app-service.tpl
+
+kubernetes/
+  app.yaml
+
+jenkins/
+  Jenkinsfile
+  Dockerfile
+
+README.md

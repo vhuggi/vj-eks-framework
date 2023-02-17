@@ -1,0 +1,63 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  CodePipeline:
+    Type: "AWS::CodePipeline::Pipeline"
+    Properties:
+      ArtifactStore:
+        Type: S3
+        Location: my-bucket
+      Name: dev-pipeline
+      RoleArn: arn:aws:iam::123456789012:role/service-role/AWSCodePipelineServiceRole-us-west-2
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: 1
+                Provider: CodeCommit
+              OutputArtifacts:
+                - Name: source
+              Configuration:
+                RepositoryName: my-repo
+                BranchName: dev
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              InputArtifacts:
+                - Name: source
+              OutputArtifacts:
+                - Name: build
+              Configuration:
+                ProjectName: my-project
+              RunOrder: 2
+        - Name: Deploy
+          Actions:
+            - Name: Deploy
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              InputArtifacts:
+                - Name: build
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: arn:aws:iam::123456789012:role/service-role/AWSCodePipelineServiceRole-us-west-2
+                StackName: dev-stack
+                TemplatePath: build::infra.yaml
+                ParameterOverrides: '{"Stage": "dev"}'
+              RunOrder: 3
+
+#This example YAML file specifies the dev-pipeline pipeline and uses the my-repo CodeCommit repository and my-project CodeBuild project. 
+#It also uses the buildspec.yml file in the build step, and specifies the dev stage in the ParameterOverrides
+

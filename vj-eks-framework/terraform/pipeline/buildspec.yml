@@ -1,0 +1,40 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      docker: 19
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - $(aws ecr get-login --region $AWS_REGION --no-include-email)
+  build:
+    commands:
+      - echo Building the Docker image...
+      - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
+      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
+  post_build:
+    commands:
+      - echo Pushing the Docker image...
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
+artifacts:
+  files:
+    - '**/*'
+  base-directory: 'app/'
+#######This example buildspec file uses the IMAGE_REPO_NAME, IMAGE_TAG, `AWS ##########
+
+#This example buildspec file uses the IMAGE_REPO_NAME, IMAGE_TAG, AWS_REGION, and AWS_ACCOUNT_ID environment variables to build and push the Docker image.
+# You can add additional environment variables as needed, such as TF_VAR_stage to specify the stage for Terraform.
+
+#In summary, to incorporate the different stages in your Terraform codebase, you can:
+
+#Create a separate Terraform configuration file for each stage, such as dev/main.tf, acc/main.tf, and prod/main.tf.
+
+#Modify your Jenkinsfile and/or CodePipeline configuration files to use the appropriate Terraform configuration file and stage-specific variables.
+
+#Modify your Terraform code to use the appropriate stage-specific variables, such as the RDS database name and the S3 bucket name.
+
+#Use version control to manage the different stages of your Terraform codebase, and use a branching strategy such as GitFlow to manage changes and releases across the different stages.
+
+#By following these best practices, you can create a scalable and maintainable Terraform codebase that can support multiple stages and environments.

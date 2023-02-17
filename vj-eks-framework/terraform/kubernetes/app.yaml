@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+      - name: myapp
+        image: mycompany/myapp:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: DATABASE_URL
+          value: "jdbc:mysql://my-rds-instance:3306/mydb"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp
+spec:
+  selector:
+    app: myapp
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  type: LoadBalancer
+
+
+#This file defines a Kubernetes deployment with 3 replicas, a container running the mycompany/myapp:latest image, 
+#and an environment variable called DATABASE_URL that points to an RDS instance. It also defines a service with a LoadBalancer type to expose the deployment to the outside world.

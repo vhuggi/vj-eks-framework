@@ -1,0 +1,63 @@
+pipeline {
+  agent any
+
+  environment {
+    AWS_DEFAULT_REGION = "us-west-2"
+    AWS_ACCESS_KEY_ID = credentials("aws-access-key-id")
+    AWS_SECRET_ACCESS_KEY = credentials("aws-secret-access-key")
+  }
+
+  stages {
+    stage('Build') {
+      steps {
+        sh 'npm install'
+      }
+    }
+
+    stage('Test') {
+      steps {
+        sh 'npm test'
+      }
+    }
+
+    stage('Build and Push Docker Image') {
+      environment {
+        DOCKER_USER = credentials("docker-user")
+        DOCKER_PASSWORD = credentials("docker-password")
+        DOCKER_IMAGE = "my-image"
+      }
+
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'docker-login', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
+          sh 'docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} .'
+          sh 'docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}'
+          sh 'docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}'
+        }
+      }
+    }
+
+    stage('Deploy to Kubernetes') {
+      environment {
+        K8S_NAMESPACE = "my-namespace"
+        K8S_SERVER = credentials("k8s-server")
+        K8S_TOKEN = credentials("k8s-token")
+        REDIS_PASSWORD = credentials("redis-password")
+      }
+
+      steps {
+        withCredentials([string(credentialsId: 'k8s-server', variable: 'K8S_SERVER'), string(credentialsId: 'k8s-token', variable: 'K8S_TOKEN'), string(credentialsId: 'redis-password', variable: 'REDIS_PASSWORD')]) {
+          sh 'sed -i "s/{{REDIS_PASSWORD}}/${REDIS_PASSWORD}/g" templates/app-deployment.tpl'
+          sh 'kubectl apply -f templates/app-service.tpl'
+          sh 'envsubst < templates/app-deployment.tpl | kubectl apply -f -'
+          sh 'envsubst < templates/app-ingress.tpl | kubectl apply -f -'
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      cleanWs()
+    }
+  }
+}
